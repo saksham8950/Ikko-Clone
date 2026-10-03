@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pocket Device — Build Checkbook</title>
+<style>
+:root{
+  --bg:#0b1020;--panel:#11182b;--panel2:#151f36;--text:#edf2ff;--muted:#9aa8c7;
+  --line:#273450;--accent:#7c9cff;--accent2:#4de1b5;--warn:#ffc857;--danger:#ff6b7a;
+}
+*{box-sizing:border-box} html{scroll-behavior:smooth}
+body{margin:0;background:linear-gradient(135deg,#080c17,#10182b 55%,#0a1222);color:var(--text);font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+a{color:inherit;text-decoration:none}.wrap{max-width:1250px;margin:auto;padding:28px}
+header{padding:24px 0 18px;display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
+h1{font-size:34px;line-height:1.1;margin:0 0 8px}.sub{color:var(--muted);max-width:760px}
+.badge{display:inline-flex;padding:7px 11px;border:1px solid var(--line);border-radius:999px;color:var(--accent2);background:#0e1b28;font-weight:700;font-size:12px}
+nav{position:sticky;top:0;z-index:10;background:rgba(8,12,23,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);margin:0 -28px;padding:10px 28px;display:flex;gap:8px;overflow:auto}
+nav a{padding:8px 12px;border-radius:9px;color:var(--muted);white-space:nowrap}nav a:hover{background:var(--panel2);color:var(--text)}
+.hero{display:grid;grid-template-columns:1.6fr .9fr;gap:16px;margin:18px 0}
+.card{background:linear-gradient(180deg,rgba(21,31,54,.96),rgba(14,21,39,.96));border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 12px 35px rgba(0,0,0,.18)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:15px}.kpi{padding:14px;border:1px solid var(--line);border-radius:12px;background:#0e1629}.kpi b{font-size:22px;display:block}.kpi span{color:var(--muted);font-size:12px}
+.progress{height:10px;background:#09101f;border-radius:99px;overflow:hidden;border:1px solid var(--line);margin:10px 0}.bar{height:100%;width:4%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:.2s}
+section{scroll-margin-top:70px;margin:28px 0}h2{font-size:24px;margin:0 0 6px}h3{margin:0 0 8px}.hint{color:var(--muted);margin:0 0 15px}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.phase{position:relative}.phase .num{position:absolute;right:18px;top:18px;color:var(--accent);font-weight:800;font-size:13px}
+.check{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(39,52,80,.6)}.check:last-child{border-bottom:0}
+input[type=checkbox]{accent-color:var(--accent2);width:18px;height:18px;margin-top:2px}.check label{cursor:pointer}.done{text-decoration:line-through;color:#70809f}
+.status{display:inline-block;font-size:11px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);margin-left:6px}
+.status.locked{color:var(--accent2);border-color:#235d4e}.status.next{color:var(--warn);border-color:#68521c}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px 9px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}th{color:#b8c4df;background:#0d1527;position:sticky;top:53px;z-index:2}td.num,th.num{text-align:right;white-space:nowrap}.tag{display:inline-block;padding:3px 7px;border-radius:7px;background:#0c1425;border:1px solid var(--line);font-size:11px;color:var(--muted)}
+.note{border-left:3px solid var(--accent);padding:11px 14px;background:#0d1527;border-radius:0 10px 10px 0;color:#c5d0e7}
+.warning{border-left-color:var(--warn)}.success{border-left-color:var(--accent2)}
+ol,ul{padding-left:20px}li{margin:7px 0}.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#c9d5f2;background:#09101e;border:1px solid var(--line);padding:12px;border-radius:10px;white-space:pre-wrap}
+.small{font-size:12px;color:var(--muted)}footer{padding:35px 0 20px;color:var(--muted);text-align:center}
+button{cursor:pointer;border:1px solid var(--line);background:#111b30;color:var(--text);padding:9px 12px;border-radius:9px}button:hover{background:#17243f}
+@media(max-width:850px){.hero,.grid2,.grid3{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.wrap{padding:18px}nav{margin:0 -18px;padding:10px 18px}h1{font-size:28px}}
+@media print{body{background:white;color:#111}nav,button{display:none}.card{box-shadow:none;border:1px solid #bbb;background:white}.sub,.hint,.small{color:#444}.bar{background:#333}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div>
+<div class="badge">BUILD CHECKBOOK • REV 1.0</div>
+<h1>DIY Pocket Device</h1>
+<p class="sub">A locked execution plan for the custom Mind-One-style touch device: CM5 compute, 4" AMOLED, USB-C DP monitor mode, Hi-Fi DAC, USB DAC mode, battery, Wi-Fi/Bluetooth and custom Android software.</p>
+</div>
+<div>
+<button onclick="window.print()">Print / Save PDF</button>
+<button onclick="resetAll()">Reset checks</button>
+</div>
+</header>
+
+<nav>
+<a href="#dashboard">Dashboard</a><a href="#rules">Rules</a><a href="#phases">Phases</a><a href="#bom">Component BOM</a><a href="#architecture">Architecture</a><a href="#software">Software</a><a href="#mechanical">Mechanical</a><a href="#budget">Budget</a><a href="#milestones">Milestones</a><a href="#next">Next Action</a>
+</nav>
+
+<section id="dashboard">
+<div class="hero">
+<div class="card">
+<h2>Current state</h2>
+<p class="hint">Start here every time you open this file. The default state is intentionally <b>M1 — Hardware designed</b> and assumes no components have been purchased yet.</p>
+<div class="progress"><div class="bar" id="progressBar"></div></div>
+<div id="progressText"><b>0%</b> complete</div>
+<div class="kpis">
+<div class="kpi"><b>₹25K</b><span>recommended working target</span></div>
+<div class="kpi"><b>₹20–30K</b><span>overall prototype ceiling</span></div>
+<div class="kpi"><b>4"</b><span>target AMOLED class</span></div>
+<div class="kpi"><b>1× USB-C</b><span>charge + USB + DP</span></div>
+</div>
+</div>
+<div class="card">
+<h3>Non-negotiables</h3>
+<ul>
+<li>Touch only — <b>no physical keyboard</b></li>
+<li><b>No cellular / SIM / eSIM</b></li>
+<li><b>No camera</b></li>
+<li><b>No dedicated HDMI</b></li>
+<li>USB-C DisplayPort Alt Mode</li>
+<li>CS43131-class Hi-Fi DAC + 3.5 mm</li>
+<li>USB DAC mode</li>
+<li>Android → custom AOSP/Lineage-based software</li>
+</ul>
+</div>
+</div>
+</section>
+
+<section id="rules">
+<div class="card">
+<h2>Execution rules</h2>
+<div class="grid2">
+<div class="note success"><b>Rule 1 — One product architecture.</b><br>Do not create disposable “Board 1 / Board 2 / Board 3” builds. The custom carrier PCB is the actual product architecture.</div>
+<div class="note warning"><b>Rule 2 — Do not buy yet.</b><br>Finish schematic → PCB layout → BOM cost → then order. Avoid random dev boards and incompatible displays.</div>
+<div class="note"><b>Rule 3 — ₹25K working target.</b><br>₹20K is the aggressive minimum; ₹30K is the practical prototype ceiling. Do not use debt/EMI for the project.</div>
+<div class="note"><b>Rule 4 — Display first.</b><br>Before PCB finalization, obtain the exact AMOLED datasheet, FPC pinout, lane count, voltage requirements, touch-controller details and mechanical dimensions.</div>
+</div>
+</div>
+</section>
+
+<section id="phases">
+<h2>Phases</h2><p class="hint">Check items as you complete them. Your overall progress is calculated automatically.</p>
+<div class="grid2">
+
+<div class="card phase"><span class="num">M1</span><h3>Phase 0 — Specification</h3><span class="status next">START HERE</span>
+<div class="check"><input type="checkbox" id="p01"><label for="p01">Create project repository and folders</label></div>
+<div class="check"><input type="checkbox" id="p02"><label for="p02">Freeze CM5 as compute platform</label></div>
+<div class="check"><input type="checkbox" id="p03"><label for="p03">Freeze no cellular / no camera / no keyboard / no HDMI</label></div>
+<div class="check"><input type="checkbox" id="p04"><label for="p04">Define 4" AMOLED target and mechanical envelope</label></div>
+<div class="check"><input type="checkbox" id="p05"><label for="p05">Freeze USB-C as charge + USB + DP port</label></div>
+<div class="check"><input type="checkbox" id="p06"><label for="p06">Freeze CS43131-class DAC architecture</label></div>
+<div class="check"><input type="checkbox" id="p07"><label for="p07">Create hardware-spec-v1 document</label></div>
+</div>
+
+<div class="card phase"><span class="num">M1</span><h3>Phase 1 — Component validation</h3>
+<div class="check"><input type="checkbox" id="p11"><label for="p11">Collect CM5 hardware/design files and pinout</label></div>
+<div class="check"><input type="checkbox" id="p12"><label for="p12">Shortlist exact AMOLED and request datasheet/sample price</label></div>
+<div class="check"><input type="checkbox" id="p13"><label for="p13">Confirm Wireless A8 mechanical/electrical fit</label></div>
+<div class="check"><input type="checkbox" id="p14"><label for="p14">Confirm battery dimensions and discharge capability</label></div>
+<div class="check"><input type="checkbox" id="p15"><label for="p15">Confirm CS43131 package, supply rails and reference design</label></div>
+<div class="check"><input type="checkbox" id="p16"><label for="p16">Confirm USB-C connector and DP/USB requirements</label></div>
+</div>
+
+<div class="card phase"><span class="num">M1</span><h3>Phase 2 — Complete schematic</h3>
+<div class="check"><input type="checkbox" id="p21"><label for="p21">CM5 100-pin board-to-board connectors</label></div>
+<div class="check"><input type="checkbox" id="p22"><label for="p22">MIPI DSI display connection</label></div>
+<div class="check"><input type="checkbox" id="p23"><label for="p23">Touch I²C + interrupt/reset</label></div>
+<div class="check"><input type="checkbox" id="p24"><label for="p24">USB-C USB 3 + DP Alt Mode</label></div>
+<div class="check"><input type="checkbox" id="p25"><label for="p25">Battery charger/power path</label></div>
+<div class="check"><input type="checkbox" id="p26"><label for="p26">Battery fuel gauge</label></div>
+<div class="check"><input type="checkbox" id="p27"><label for="p27">CS43131 I²S + analog output</label></div>
+<div class="check"><input type="checkbox" id="p28"><label for="p28">Speaker amplifier + speaker</label></div>
+<div class="check"><input type="checkbox" id="p29"><label for="p29">PDM MEMS microphone</label></div>
+<div class="check"><input type="checkbox" id="p30"><label for="p30">Power/volume buttons</label></div>
+<div class="check"><input type="checkbox" id="p31"><label for="p31">Debug UART/test points</label></div>
+</div>
+
+<div class="card phase"><span class="num">M1</span><h3>Phase 3 — PCB layout</h3>
+<div class="check"><input type="checkbox" id="p31a"><label for="p31a">Use 6-layer PCB target</label></div>
+<div class="check"><input type="checkbox" id="p32"><label for="p32">Place CM5 + high-speed interfaces</label></div>
+<div class="check"><input type="checkbox" id="p33"><label for="p33">Route MIPI/USB/DP with controlled impedance</label></div>
+<div class="check"><input type="checkbox" id="p34"><label for="p34">Route audio away from noisy power/high-speed sections</label></div>
+<div class="check"><input type="checkbox" id="p35"><label for="p35">Complete power/ground planes and thermal review</label></div>
+<div class="check"><input type="checkbox" id="p36"><label for="p36">Add test points and bring-up access</label></div>
+<div class="check"><input type="checkbox" id="p37"><label for="p37">Generate Gerbers + BOM + pick-and-place</label></div>
+</div>
+
+<div class="card phase"><span class="num">M2</span><h3>Phase 4 — Manufacture & assembly</h3>
+<div class="check"><input type="checkbox" id="p41"><label for="p41">Get 3 PCB assembly quotes</label></div>
+<div class="check"><input type="checkbox" id="p42"><label for="p42">Order PCB + components after cost approval</label></div>
+<div class="check"><input type="checkbox" id="p43"><label for="p43">Inspect PCB before powering</label></div>
+<div class="check"><input type="checkbox" id="p44"><label for="p44">Check shorts and power rails</label></div>
+</div>
+
+<div class="card phase"><span class="num">M2–M3</span><h3>Phase 5 — Hardware bring-up</h3>
+<div class="check"><input type="checkbox" id="p51"><label for="p51">Power rails stable</label></div>
+<div class="check"><input type="checkbox" id="p52"><label for="p52">CM5 boots</label></div>
+<div class="check"><input type="checkbox" id="p53"><label for="p53">Display works</label></div>
+<div class="check"><input type="checkbox" id="p54"><label for="p54">Touch works</label></div>
+<div class="check"><input type="checkbox" id="p55"><label for="p55">Wi-Fi works</label></div>
+<div class="check"><input type="checkbox" id="p56"><label for="p56">Bluetooth works</label></div>
+<div class="check"><input type="checkbox" id="p57"><label for="p57">USB data works</label></div>
+<div class="check"><input type="checkbox" id="p58"><label for="p58">USB-C charging works</label></div>
+<div class="check"><input type="checkbox" id="p59"><label for="p59">Battery/fuel gauge works</label></div>
+<div class="check"><input type="checkbox" id="p60"><label for="p60">3.5 mm audio works</label></div>
+<div class="check"><input type="checkbox" id="p61"><label for="p61">Speaker + microphone work</label></div>
+<div class="check"><input type="checkbox" id="p62"><label for="p62">USB-C DP monitor output works</label></div>
+</div>
+
+<div class="card phase"><span class="num">M3</span><h3>Phase 6 — Android</h3>
+<div class="check"><input type="checkbox" id="p71"><label for="p71">Boot supported Android image</label></div>
+<div class="check"><input type="checkbox" id="p72"><label for="p72">Create/adjust device tree</label></div>
+<div class="check"><input type="checkbox" id="p73"><label for="p73">Integrate display/touch</label></div>
+<div class="check"><input type="checkbox" id="p74"><label for="p74">Integrate audio/DAC</label></div>
+<div class="check"><input type="checkbox" id="p75"><label for="p75">Integrate battery/power reporting</label></div>
+<div class="check"><input type="checkbox" id="p76"><label for="p76">Verify USB + DP</label></div>
+</div>
+
+<div class="card phase"><span class="num">M4</span><h3>Phase 7 — Custom software</h3>
+<div class="check"><input type="checkbox" id="p81"><label for="p81">Build custom launcher/UI</label></div>
+<div class="check"><input type="checkbox" id="p82"><label for="p82">Create compact touch-first navigation</label></div>
+<div class="check"><input type="checkbox" id="p83"><label for="p83">Automatic monitor/Desktop mode</label></div>
+<div class="check"><input type="checkbox" id="p84"><label for="p84">USB DAC mode</label></div>
+<div class="check"><input type="checkbox" id="p85"><label for="p85">Hardware settings/power UI</label></div>
+<div class="check"><input type="checkbox" id="p86"><label for="p86">OTA/update strategy</label></div>
+<div class="check"><input type="checkbox" id="p87"><label for="p87">Evaluate AOSP vs Lineage base</label></div>
+</div>
+
+<div class="card phase"><span class="num">M5</span><h3>Phase 8 — Mechanical</h3>
+<div class="check"><input type="checkbox" id="p91"><label for="p91">Measure assembled PCB + display + battery</label></div>
+<div class="check"><input type="checkbox" id="p92"><label for="p92">Design first enclosure around real hardware</label></div>
+<div class="check"><input type="checkbox" id="p93"><label for="p93">Target ~90 × 75 × 12–14 mm first</label></div>
+<div class="check"><input type="checkbox" id="p94"><label for="p94">Optimize toward ~86–90 × 72–75 × 10–12 mm</label></div>
+<div class="check"><input type="checkbox" id="p95"><label for="p95">Finalize buttons, speaker, mic and ports</label></div>
+</div>
+
+<div class="card phase"><span class="num">M5</span><h3>Phase 9 — Final prototype</h3>
+<div class="check"><input type="checkbox" id="p101"><label for="p101">Full battery stress test</label></div>
+<div class="check"><input type="checkbox" id="p102"><label for="p102">Thermal test</label></div>
+<div class="check"><input type="checkbox" id="p103"><label for="p103">USB-C DP stability test</label></div>
+<div class="check"><input type="checkbox" id="p104"><label for="p104">DAC/audio noise test</label></div>
+<div class="check"><input type="checkbox" id="p105"><label for="p105">Suspend/resume and charging test</label></div>
+<div class="check"><input type="checkbox" id="p106"><label for="p106">Final enclosure assembly</label></div>
+<div class="check"><input type="checkbox" id="p107"><label for="p107">Document Rev A and Rev B changes</label></div>
+</div>
+</div>
+</section>
+
+<section id="bom">
+<h2>Component BOM</h2><p class="hint">Planning prices, not quotations. Use them as budget ceilings until the exact supplier/part is selected.</p>
+<div class="card">
+<table>
+<thead><tr><th>Subsystem</th><th>Component / target</th><th>Purpose</th><th>Buy now?</th><th class="num">Target ₹</th><th class="num">Estimate ₹</th></tr></thead>
+<tbody>
+<tr><td>Compute</td><td><b>Radxa CM5 4GB/32GB</b></td><td>Main SoM: RK3588S2, RAM, eMMC</td><td><span class="tag">YES</span></td><td class="num">13,500</td><td class="num">13,536</td></tr>
+<tr><td>Wireless</td><td><b>Radxa Wireless A8 / RTL8852BE</b></td><td>Wi-Fi 6 + Bluetooth</td><td><span class="tag">YES</span></td><td class="num">1,800</td><td class="num">1,775</td></tr>
+<tr><td>Display</td><td><b>~4" MIPI AMOLED + touch</b></td><td>Main screen; target 1080×1200 class</td><td><span class="tag">AFTER DATASHEET</span></td><td class="num">4,000</td><td class="num">3,500–5,500</td></tr>
+<tr><td>Power</td><td><b>BQ25895-class 1S charger/power path</b></td><td>USB-C battery charging + system power path</td><td><span class="tag">AFTER SCHEMATIC</span></td><td class="num">350</td><td class="num">350–700</td></tr>
+<tr><td>Battery monitor</td><td><b>MAX17048</b></td><td>1-cell fuel gauge</td><td><span class="tag">AFTER SCHEMATIC</span></td><td class="num">450</td><td class="num">400–600</td></tr>
+<tr><td>Battery</td><td><b>1S Li-Po 2000–2500mAh</b></td><td>Main energy storage; ~5–6mm target thickness</td><td><span class="tag">AFTER MECHANICAL</span></td><td class="num">700</td><td class="num">500–900</td></tr>
+<tr><td>DAC</td><td><b>CS43131</b></td><td>Hi-Fi headphone DAC + amp path</td><td><span class="tag">AFTER REFERENCE DESIGN</span></td><td class="num">1,800</td><td class="num">1,700–2,200</td></tr>
+<tr><td>Speaker</td><td><b>MAX98357A-class I²S Class-D amp</b></td><td>Internal speaker amplifier</td><td><span class="tag">AFTER SCHEMATIC</span></td><td class="num">250</td><td class="num">150–350</td></tr>
+<tr><td>Mic</td><td><b>PDM MEMS microphone</b></td><td>Digital microphone</td><td><span class="tag">AFTER SCHEMATIC</span></td><td class="num">150</td><td class="num">100–250</td></tr>
+<tr><td>Audio</td><td><b>3.5mm compact jack</b></td><td>Headphone output</td><td><span class="tag">AFTER PCB</span></td><td class="num">100</td><td class="num">50–150</td></tr>
+<tr><td>USB-C</td><td><b>USB-C receptacle + protection/PD parts</b></td><td>Charge + USB 3 + DP Alt Mode</td><td><span class="tag">AFTER REFERENCE</span></td><td class="num">600</td><td class="num">400–900</td></tr>
+<tr><td>Controls</td><td><b>Power + Volume buttons</b></td><td>Physical controls</td><td><span class="tag">AFTER PCB</span></td><td class="num">100</td><td class="num">50–150</td></tr>
+<tr><td>PCB</td><td><b>6-layer custom carrier + assembly</b></td><td>Connects CM5 to all peripherals</td><td><span class="tag">AFTER GERBERS</span></td><td class="num">2,500</td><td class="num">1,500–3,500</td></tr>
+<tr><td>Mechanical</td><td><b>Prototype enclosure</b></td><td>First physical housing; design after PCB</td><td><span class="tag">LAST</span></td><td class="num">2,500</td><td class="num">1,500–4,000</td></tr>
+<tr><td>Misc.</td><td><b>FPCs, connectors, ESD, passives, test points, screws</b></td><td>Supporting parts</td><td><span class="tag">AFTER BOM</span></td><td class="num">1,500</td><td class="num">1,000–2,000</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="architecture">
+<h2>Locked architecture</h2>
+<div class="grid2">
+<div class="card"><h3>Core</h3><div class="code">4" AMOLED + touch
+        │
+      MIPI DSI
+        │
+      Radxa CM5
+        │
+ ┌──────┼─────────┐
+Wi-Fi  Bluetooth  USB-C
+                  │
+          USB 3 + DP Alt Mode
+                  │
+               Monitor</div></div>
+<div class="card"><h3>Audio + power</h3><div class="code">CM5 I²S ──► CS43131 ──► 3.5mm
+       │
+       └────► Class-D ──► Speaker
+
+USB-C ──► Charger/Power Path ──► 1S Li-Po
+                       │
+                 MAX17048 gauge</div></div>
+</div>
+<div class="card" style="margin-top:14px"><h3>What is intentionally excluded</h3><p><b>Cellular:</b> excluded. <b>eSIM:</b> excluded. <b>Camera:</b> excluded. <b>Physical keyboard:</b> excluded. <b>Dedicated HDMI:</b> excluded. <b>Random development boards:</b> excluded.</p><p class="small">The USB-C port is intentionally the single external I/O hub for charging, USB data and DisplayPort monitor output.</p></div>
+</section>
+
+<section id="software">
+<h2>Software plan</h2>
+<div class="grid3">
+<div class="card"><h3>1 — Bring-up</h3><p>Start with supported Android on CM5. Validate display, touch, Wi-Fi, Bluetooth, audio, battery, USB and DP.</p></div>
+<div class="card"><h3>2 — Device software</h3><p>Build/adjust the device tree, kernel configuration and hardware integrations. Keep the base close to AOSP.</p></div>
+<div class="card"><h3>3 — Product UI</h3><p>Build a touch-first launcher, compact settings, monitor/Desktop Mode and USB DAC Mode.</p></div>
+</div>
+<div class="note" style="margin-top:14px"><b>Do not start the custom OS before hardware bring-up.</b> First make the board work with a known Android image. Then replace/customize the software stack.</div>
+</section>
+
+<section id="mechanical">
+<h2>Mechanical plan</h2>
+<div class="grid2">
+<div class="card"><h3>First target</h3><ul><li>Approx. <b>90 × 75 × 12–14 mm</b></li><li>Design around the actual display and PCB</li><li>Battery on rear layer</li><li>USB-C on bottom/side depending on final board</li><li>3.5mm only if it fits without compromising thickness</li></ul></div>
+<div class="card"><h3>Optimization target</h3><ul><li>Approx. <b>86–90 × 72–75 × 10–12 mm</b></li><li>Remove debug connector</li><li>Shrink connectors/FPCs</li><li>Optimize battery placement</li><li>Reduce PCB dead space</li></ul></div>
+</div>
+<div class="note warning" style="margin-top:14px"><b>Do not design the final enclosure now.</b> The exact display FPC, carrier PCB and battery dimensions must be known first.</div>
+</section>
+
+<section id="budget">
+<h2>Budget control</h2>
+<div class="grid3">
+<div class="card"><h3>₹20K — Aggressive</h3><p>CM5 + wireless + economical display + basic PCB/audio/power. Minimal enclosure. Some parts may require careful sourcing.</p></div>
+<div class="card"><h3>₹25K — Recommended</h3><p>Target configuration: CM5 4/32, suitable AMOLED, A8, integrated DAC, battery/power and first custom PCB.</p></div>
+<div class="card"><h3>₹30K — Comfortable prototype</h3><p>Better display sourcing, PCB assembly allowance, enclosure prototype and spare/miscellaneous budget.</p></div>
+</div>
+<div class="card" style="margin-top:14px">
+<h3>Spend gates</h3>
+<table><tr><th>Gate</th><th>Spend allowed</th><th>Condition</th></tr>
+<tr><td>G0</td><td>₹0</td><td>Specification and schematic not finished</td></tr>
+<tr><td>G1</td><td>Component purchases</td><td>Exact display datasheet + BOM + schematic checked</td></tr>
+<tr><td>G2</td><td>PCB fabrication</td><td>Layout reviewed, Gerbers checked, budget approved</td></tr>
+<tr><td>G3</td><td>Enclosure</td><td>Working assembled electronics measured</td></tr></table>
+</div>
+</section>
+
+<section id="milestones">
+<h2>Five milestones</h2>
+<div class="grid3">
+<div class="card"><h3>🟥 M1</h3><p><b>Hardware designed</b><br>Schematic + PCB + BOM.</p></div>
+<div class="card"><h3>🟧 M2</h3><p><b>Device boots</b><br>CM5 + display + touch.</p></div>
+<div class="card"><h3>🟨 M3</h3><p><b>Device functions</b><br>Wi-Fi + audio + battery + USB-C.</p></div>
+<div class="card"><h3>🟩 M4</h3><p><b>Product behavior</b><br>Android + custom UI + DP + USB DAC.</p></div>
+<div class="card"><h3>🟦 M5</h3><p><b>Product form</b><br>Compact enclosure + final prototype.</p></div>
+</div>
+</section>
+
+<section id="next">
+<div class="card">
+<h2>Next action — complete execution sequence</h2>
+<p class="hint">Follow these steps in order. Do not jump ahead. When one step is complete, move directly to the next step.</p>
+
+<div class="note success"><b>STEP 1 — Set up the project workspace</b><br>
+Create the project repository and folders from this checkbook. Put the locked product specification and architecture in the README. Create a simple decision log so component changes are recorded instead of repeatedly reconsidered.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 2 — Collect CM5 engineering documentation</b><br>
+Download the official CM5 pinout, schematic/reference design, mechanical drawings and hardware design files. Identify every CM5 connector pin/interface that our carrier will use. Create a working pinout sheet for Display, USB-C, USB 3, I²S, PDM, I²C, GPIO, power and debug.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 3 — Lock the exact display before PCB layout</b><br>
+Find the exact 4" AMOLED candidate. Obtain the complete datasheet and confirm physical dimensions, active area, FPC dimensions, connector pinout, MIPI DSI lane count, power rails, reset/enable signals, touch controller, touch interface and initialization requirements. Do not order the PCB until this information is available. If the candidate fails any requirement, select another display and repeat this step.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 4 — Freeze the physical envelope</b><br>
+Using the real display dimensions, define the first PCB and enclosure envelope. Reserve space for the CM5, Wireless A8, battery, USB-C, 3.5mm jack, speaker, microphone and buttons. Set the first physical target around 90 × 75 × 12–14 mm rather than forcing the final thin size immediately.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 5 — Create the complete KiCad schematic</b><br>
+Draw the actual carrier board, not a temporary development board. Connect the CM5 board-to-board connectors to the MIPI display/touch, Wireless A8, USB-C USB 3 + DP, battery charger/power path, fuel gauge, CS43131 DAC, speaker amplifier, PDM microphone, buttons, debug UART and test points. Use the official/reference circuits for high-speed USB/DP, power and DAC sections.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 6 — Perform schematic review</b><br>
+Run ERC and manually review every power rail, connector pin, voltage level, reset line, interrupt, I²C address, audio clock/data line, USB-C configuration, USB 3 pair, DP lane and test point. Confirm every IC has the required decoupling/passives. Fix all errors before moving to PCB layout.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 7 — Build and cost the BOM</b><br>
+Generate the complete BOM from the schematic. Get current prices for CM5, Wireless A8, exact AMOLED, battery, DAC, power ICs, USB-C connector, audio parts, connectors, PCB fabrication and assembly. Calculate the full landed prototype cost. Keep the target at ₹20K aggressive, ₹25K recommended and ₹30K maximum. If it exceeds ₹30K, reduce cost before ordering rather than improvising later.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 8 — PCB layout</b><br>
+Start the 6-layer carrier PCB. Place the CM5 and high-speed interfaces first, then power, display, DAC/audio, wireless and connectors. Route MIPI DSI, USB 3 and DisplayPort according to impedance/length requirements. Keep analog audio away from noisy switching/high-speed areas. Complete ground planes, power distribution, thermal paths and test points.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 9 — PCB design review</b><br>
+Run DRC and inspect the complete board. Verify connector orientation, mechanical clearances, CM5 mounting, display FPC access, USB-C placement, 3.5mm placement, battery clearance, antenna clearance and service/debug access. Check the 3D model against the intended enclosure envelope. Only proceed when the board passes electrical and mechanical review.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 10 — Manufacture the first real carrier PCB</b><br>
+Generate Gerbers, drill files, BOM and pick-and-place files. Get multiple manufacturing/assembly quotes. Choose the supplier within the approved budget and order a small prototype quantity. Do not add new features at this stage. Rev A should implement the locked architecture only.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 11 — Electrical bring-up</b><br>
+Before installing the CM5, inspect the assembled board and check for shorts. Verify charger/power-path behavior and every major voltage rail with a current-limited supply. Then install the CM5 and bring the board up carefully. Record every measurement and failure in the bring-up log.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 12 — Bring up hardware one subsystem at a time</b><br>
+Use this order: power → CM5 boot → display → touch → Wi-Fi → Bluetooth → USB data → battery/fuel gauge → speaker/microphone → CS43131/3.5mm → USB-C DisplayPort monitor output. Do not debug multiple unknown subsystems simultaneously.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 13 — Get Android running</b><br>
+Start with the supported CM5 Android image. Confirm the complete hardware works before modifying the OS. Then create/adjust the device configuration and integrate display, touch, audio, battery, USB and DP support into the Android build.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 14 — Implement the two signature software modes</b><br>
+First implement <b>Desktop/Monitor Mode</b>: connect USB-C to a monitor and switch to an appropriate large-screen interface. Then implement <b>USB DAC Mode</b>: connect the device to a computer and expose the device audio path through USB while routing output through the CS43131/3.5mm path.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 15 — Build the custom product UI</b><br>
+Create the touch-first launcher, compact settings, hardware controls, battery display, monitor mode controls, DAC mode controls and other product-specific UI. Keep the first version simple; polish comes after the core functions are stable.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 16 — Mechanical prototype</b><br>
+Only after the assembled electronics are working, measure the actual PCB, display, battery, connectors and components. Create the first enclosure around those measurements. Start around 90 × 75 × 12–14 mm, then optimize toward the smaller target.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 17 — Full-system validation</b><br>
+Test charging, battery runtime, thermal behavior, suspend/resume, USB-C DP stability, USB DAC operation, audio noise, Wi-Fi/Bluetooth reliability, touch, display, buttons and mechanical fit. Record failures and decide whether each requires software, enclosure or PCB revision.</div>
+
+<div class="note" style="margin-top:10px"><b>STEP 18 — Rev B optimization</b><br>
+Only after the complete Rev A device works, reduce PCB dead space, remove unnecessary debug hardware, improve connector placement, optimize battery placement, reduce thickness and clean up the enclosure. Do not redesign the core architecture unless testing proves a change is necessary.</div>
+
+<div class="note success" style="margin-top:14px"><b>Immediate starting point:</b> complete Steps 1–3 before buying anything significant. Your first hard engineering checkpoint is an exact display datasheet + CM5 documentation + a locked top-level schematic plan. Once those are complete, move to Step 4 rather than returning to product brainstorming.</div>
+</div>
+</section>
+
+<footer>
+DIY Pocket Device • Execution Checkbook • Rev 1.0<br>
+<span class="small">Prices are planning estimates and must be re-quoted before purchase. This file is intentionally self-contained and stores checklist state in your browser.</span>
+</footer>
+</div>
+<script>
+const boxes=[...document.querySelectorAll('input[type=checkbox]')];
+const KEY='pocket-device-checkbook-v1';
+function load(){let s={};try{s=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){} boxes.forEach(b=>{b.checked=!!s[b.id];updateLabel(b)});updateProgress()}
+function save(){const s={};boxes.forEach(b=>s[b.id]=b.checked);localStorage.setItem(KEY,JSON.stringify(s));updateProgress()}
+function updateLabel(b){const l=document.querySelector('label[for="'+b.id+'"]');if(l)l.classList.toggle('done',b.checked)}
+function updateProgress(){const n=boxes.filter(b=>b.checked).length,p=Math.round(n/boxes.length*100);document.getElementById('progressBar').style.width=p+'%';document.getElementById('progressText').innerHTML='<b>'+p+'%</b> complete — '+n+' / '+boxes.length+' tasks'}
+boxes.forEach(b=>b.addEventListener('change',()=>{updateLabel(b);save()}));
+function resetAll(){if(confirm('Reset all checklist progress?')){localStorage.removeItem(KEY);boxes.forEach(b=>{b.checked=false;updateLabel(b)});updateProgress()}}
+load();
+</script>
+</body>
+</html>
